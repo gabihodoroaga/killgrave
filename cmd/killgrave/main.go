@@ -42,6 +42,8 @@ func main() {
 		watcherFlag    = flag.Bool("watcher", false, "file watcher, reload the server with each file change")
 		proxyModeFlag  = flag.String("proxy-mode", _defaultProxyMode.String(), "proxy mode you can choose between (all, missing or none)")
 		proxyURLFlag   = flag.String("proxy-url", "", "proxy url, you need to choose a proxy-mode")
+		certFlag       = flag.String("cert", "", "path to the certificate file for tls")
+		keyFlag        = flag.String("key", "", "path to the key file for tls")
 	)
 
 	flag.Parse()
@@ -60,6 +62,7 @@ func main() {
 		killgrave.WithProxyConfiguration(*proxyModeFlag, *proxyURLFlag),
 		killgrave.WithWatcherConfiguration(*watcherFlag),
 		killgrave.WithConfigFile(*configFilePath),
+		killgrave.WithCertificate(*certFlag, *keyFlag),
 	)
 	if err != nil {
 		log.Println(err)
@@ -111,7 +114,7 @@ func runServer(host string, port int, cfg killgrave.Config) server.Server {
 
 	httpServer := &http.Server{
 		Addr:    httpAddr,
-		Handler: handlers.CORS(server.PrepareAccessControl(cfg.CORS)...)(router),
+		Handler: handlers.CombinedLoggingHandler(os.Stdout, handlers.CORS(server.PrepareAccessControl(cfg.CORS)...)(router)),
 	}
 
 	proxyServer, err := server.NewProxy(cfg.Proxy.URL, cfg.Proxy.Mode)
@@ -125,6 +128,8 @@ func runServer(host string, port int, cfg killgrave.Config) server.Server {
 		httpServer,
 		proxyServer,
 		cfg.Secure,
+		cfg.Cert,
+		cfg.Key,
 	)
 	if err := s.Build(); err != nil {
 		log.Fatal(err)

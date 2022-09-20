@@ -18,6 +18,8 @@ type Config struct {
 	Proxy         ConfigProxy `yaml:"proxy"`
 	Secure        bool        `yaml:"secure"`
 	Watcher       bool        `yaml:"watcher"`
+	Cert          []byte      `yaml:"cert"`
+	Key           []byte      `yaml:"key"`
 }
 
 // ConfigCORS representation of section CORS of the yaml
@@ -154,6 +156,26 @@ func WithWatcherConfiguration(watcher bool) ConfigOpt {
 	return func(cfg *Config) error {
 
 		cfg.Watcher = watcher
+		return nil
+	}
+}
+
+// WithCertificate preparing server to do auto-reload
+func WithCertificate(certFile, keyFile string) ConfigOpt {
+	return func(cfg *Config) error {
+		if certFile != "" && keyFile != "" {
+			certContent, err := ioutil.ReadFile(certFile)
+			if err != nil {
+				return fmt.Errorf("%w: error trying to read cert file %s", err, certFile)
+			}
+			cfg.Cert = certContent
+			keyContent, err := ioutil.ReadFile(keyFile)
+			if err != nil {
+				return fmt.Errorf("%w: error trying to read key file %s", err, keyFile)
+			}
+
+			cfg.Key = keyContent
+		}
 		return nil
 	}
 }

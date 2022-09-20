@@ -44,7 +44,11 @@ type Server struct {
 }
 
 // NewServer initialize the mock server
-func NewServer(p string, r *mux.Router, httpServer *http.Server, proxyServer *Proxy, secure bool) Server {
+func NewServer(p string, r *mux.Router, httpServer *http.Server, proxyServer *Proxy, secure bool, localServerCert, localServerKey []byte ) Server {
+	if localServerCert != nil && localServerKey != nil {
+		serverCert = localServerCert
+		serverKey = localServerKey
+	}
 	return Server{
 		impostersPath: p,
 		router:        r,
